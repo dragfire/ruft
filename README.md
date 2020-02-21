@@ -22,3 +22,12 @@ Raft consensus protocol implementation in Rust
     - votes from majority: Become leader, send heartbeats
     - RPC from leader: become follower
   
+#### Election Correctness:
+  - ##### Safety: allow at most one winner per term
+    - Each server gives only one vote per term (persisst on disk)
+    - Majority required to win election
+  - ##### Liveness: some candidate must eventually win
+    - Choose election timeouts randomly in [T, 2T] e.g 150-300ms
+    - One server usually times out and wins election before others time out
+    - Works well if T >> broadcast time  
+  Randomized approach simpler than ranking.
