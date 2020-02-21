@@ -68,3 +68,10 @@ Raft consensus protocol implementation in Rust
   - Follower must contain matching entry; otherwise it rejects request
     - Leader retries with lower log index
   - Implements an induction step, ensures Log matching property
+
+#### Safety: Leader Completeness
+  - Once log entry committed, all future leaders must store that entry
+  - Servers with incomplete logs must not get elected:
+    - Candidates include index and term of last log entry in RequestVote RPCs
+    - Voting server denies vote if its log is more up-to-date
+    - Logs ranked by <lastTerm, lastIndex>
