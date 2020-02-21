@@ -31,3 +31,40 @@ Raft consensus protocol implementation in Rust
     - One server usually times out and wins election before others time out
     - Works well if T >> broadcast time  
   Randomized approach simpler than ranking.
+  
+#### Normal Operation:
+  - Client sends command to leader
+  - Leader appends command to its log
+  - Leader sends AppendEntries RPCs to all followers
+  - Once new entry committed:
+    - Leader executes command in its state machine, returns result to client
+    - Leader notifies followers of committed entres in subsequent AppendEntries RPCs
+    - Followers execute committed commands in their state machines 
+  - Crashed/slow followers?
+    - Leader retries AppendEntries RPCs until they succeed
+  - Optimal performance in common case
+    - One successful RPC to any majority of servers
+ 
+#### Log Structure:
+ Each node has its own log.
+  - Must survive crashes (store on disk)
+  - Entry committed if safe to execute in state machines
+    - Replicated on majority of servers by leader of its term
+    
+#### Log Inconsistencies:
+  Crashes lead to inconsistencies.
+  Raft minimizes special code for repairing inconsistencies:
+    - Leader assumes its log is correct
+    - Normal operation will repair all inconsistencies
+
+#### Log Matching Property:
+  - If log entries on different servers have same index and term:
+    - They store the same command
+    - The logs are identical in all preceding entries
+  - If a given entry is committed, all preceding entries are also committed
+ 
+#### AppendEntries Consistency Check:
+  - AppendEntries RPCs include <index, term> of entry preceding new one(s)
+  - Follower must contain matching entry; otherwise it rejects request
+    - Leader retries with lower log index
+  - Implements an induction step, ensures Log matching property
