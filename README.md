@@ -15,3 +15,10 @@ Raft consensus protocol implementation in Rust
     - Incoming RPC has obsolete term? Reply with error
   Terms identify obsolete information
 
+#### Leader Election:
+  - Become Candidate (relies on Election Timeout)
+  - currentTerm++, vote for self
+  - send RequestVote RPCs to other servers (if timeout, go to above step)
+    - votes from majority: Become leader, send heartbeats
+    - RPC from leader: become follower
+  
