@@ -75,3 +75,5 @@ Raft consensus protocol implementation in Rust
     - Candidates include index and term of last log entry in RequestVote RPCs
     - Voting server denies vote if its log is more up-to-date
     - Logs ranked by <lastTerm, lastIndex>
+
+
