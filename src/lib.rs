@@ -1,9 +1,9 @@
 use std::io;
 use std::thread;
-use std::collections::HashMap;
+use zmq::Socket;
 use std::hash::Hash;
 use std::time::Duration;
-use zmq::Socket;
+use std::collections::HashMap;
 
 pub struct Storage<K, V> {
     data: HashMap<K, V>,
@@ -78,21 +78,34 @@ pub fn client() {
     }
 }
 
-struct NodeRpc {
-    address: String,
-    server: Result<Socket, zmq::Error>,
-    client: Result<Socket, zmq::Error>,
+pub struct NodeRpc {
+    pub address: String,
+    pub client: Socket,
 }
 
 impl NodeRpc {
-    pub fn new(address: String) -> NodeRpc {
+    pub fn new(address: String) -> Result<NodeRpc, zmq::Error> {
         let context = zmq::Context::new();
-        let client = context.socket(zmq::REQ);
-        let server = context.socket(zmq::REP);
-        NodeRpc { address, server, client }
+        let client = context.socket(zmq::REQ)?;
+        client.connect(&address)?;
+
+        Ok(NodeRpc { address, client })
     }
 
-    pub fn start() -> Result<()> {
+    pub fn start(&self) -> Result<(), zmq::Error> {
+        thread::spawn(|| {
+            let context = zmq::Context::new();
+            let server = context.socket(zmq::REP).unwrap();
+            assert!(server.bind("tcp://*:5555").is_ok());
+
+            let mut msg = zmq::Message::new();
+
+            loop {
+                server.recv(&mut msg, 0).unwrap();
+                println!("Received {}", msg.as_str().unwrap());
+                server.send("OK", 0).unwrap();
+            }
+        });
 
         Ok(())
     }
