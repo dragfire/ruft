@@ -3,11 +3,15 @@ use std::time::Duration;
 
 use ruft::*;
 
+mod message;
+
 fn main() {
     let rpc = NodeRpc::new(String::from("tcp://localhost:5555"));
+
     match rpc {
         Ok(rpc) => {
             rpc.start();
+
             let mut msg = zmq::Message::new();
 
             for request_nbr in 0..10 {

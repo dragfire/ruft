@@ -40,44 +40,6 @@ struct Node<'a> {
     rpc: &'a NodeRpc,
 }
 
-// ======================== NodeRpc =============================
-
-pub fn spawn_server() {
-    thread::spawn(|| {
-        let context = zmq::Context::new();
-        let responder = context.socket(zmq::REP).unwrap();
-
-        assert!(responder.bind("tcp://*:5555").is_ok());
-
-        let mut msg = zmq::Message::new();
-        loop {
-            responder.recv(&mut msg, 0).unwrap();
-            println!("Received {}", msg.as_str().unwrap());
-            thread::sleep(Duration::from_millis(1000));
-            responder.send("World", 0).unwrap();
-        }
-    });
-}
-
-pub fn client() {
-    println!("Connecting to hello world server...\n");
-
-    let context = zmq::Context::new();
-    let requester = context.socket(zmq::REQ).unwrap();
-
-    assert!(requester.connect("tcp://localhost:5555").is_ok());
-
-    let mut msg = zmq::Message::new();
-
-    for request_nbr in 0..10 {
-        println!("Sending Hello {}...", request_nbr);
-        requester.send("Hello", 0).unwrap();
-
-        requester.recv(&mut msg, 0).unwrap();
-        println!("Received World {}: {}", msg.as_str().unwrap(), request_nbr);
-    }
-}
-
 pub struct NodeRpc {
     pub address: String,
     pub client: Socket,
@@ -92,7 +54,7 @@ impl NodeRpc {
         Ok(NodeRpc { address, client })
     }
 
-    pub fn start(&self) -> Result<(), zmq::Error> {
+    pub fn start(&self) {
         thread::spawn(|| {
             let context = zmq::Context::new();
             let server = context.socket(zmq::REP).unwrap();
@@ -106,8 +68,6 @@ impl NodeRpc {
                 server.send("OK", 0).unwrap();
             }
         });
-
-        Ok(())
     }
 }
 
@@ -120,7 +80,6 @@ mod tests {
     #[test]
     fn test_noderpc() {
         let rpc = NodeRpc::new("127.0.0.0:8080".to_string());
-        rpc.start();
     }
 
     #[test]
