@@ -1,7 +1,9 @@
 use std::io;
+use std::thread;
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::net::{TcpListener, TcpStream};
+use std::time::Duration;
+use zmq::Socket;
 
 pub struct Storage<K, V> {
     data: HashMap<K, V>,
@@ -24,7 +26,6 @@ where K: Hash + Eq,
     }
 }
 
-
 // ======================== Node =============================
 
 enum NodeState {
@@ -41,31 +42,64 @@ struct Node<'a> {
 
 // ======================== NodeRpc =============================
 
+pub fn spawn_server() {
+    thread::spawn(|| {
+        let context = zmq::Context::new();
+        let responder = context.socket(zmq::REP).unwrap();
+
+        assert!(responder.bind("tcp://*:5555").is_ok());
+
+        let mut msg = zmq::Message::new();
+        loop {
+            responder.recv(&mut msg, 0).unwrap();
+            println!("Received {}", msg.as_str().unwrap());
+            thread::sleep(Duration::from_millis(1000));
+            responder.send("World", 0).unwrap();
+        }
+    });
+}
+
+pub fn client() {
+    println!("Connecting to hello world server...\n");
+
+    let context = zmq::Context::new();
+    let requester = context.socket(zmq::REQ).unwrap();
+
+    assert!(requester.connect("tcp://localhost:5555").is_ok());
+
+    let mut msg = zmq::Message::new();
+
+    for request_nbr in 0..10 {
+        println!("Sending Hello {}...", request_nbr);
+        requester.send("Hello", 0).unwrap();
+
+        requester.recv(&mut msg, 0).unwrap();
+        println!("Received World {}: {}", msg.as_str().unwrap(), request_nbr);
+    }
+}
+
 struct NodeRpc {
     address: String,
+    server: Result<Socket, zmq::Error>,
+    client: Result<Socket, zmq::Error>,
 }
 
 impl NodeRpc {
     pub fn new(address: String) -> NodeRpc {
-        NodeRpc { address }
+        let context = zmq::Context::new();
+        let client = context.socket(zmq::REQ);
+        let server = context.socket(zmq::REP);
+        NodeRpc { address, server, client }
     }
 
-    fn handle_connection(&self, stream: TcpStream) {
-        println!("{:?}", stream);
-    }
+    pub fn start() -> Result<()> {
 
-    pub fn start(&self) -> io::Result<()> {
-        let listener = TcpListener::bind(self.address.clone())?;
-
-        for stream in listener.incoming() {
-            self.handle_connection(stream?);
-        }
         Ok(())
     }
 }
 
-
 // ======================== Tests ========================
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -74,5 +108,12 @@ mod tests {
     fn test_noderpc() {
         let rpc = NodeRpc::new("127.0.0.0:8080".to_string());
         rpc.start();
+    }
+
+    #[test]
+    fn test_storage() {
+        let mut storage: Storage<i32, &str> = Storage::new();
+        storage.put(1, "ruft world");
+        storage.put(2, "hello world");
     }
 }
