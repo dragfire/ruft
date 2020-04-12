@@ -76,7 +76,7 @@ mod tests {
                     println!("Received Raft {}: {}", msg.as_str().unwrap(), request_nbr);
                 }
                 if let Some(her) = rpc.handlers.get("/hello") {
-                    assert_eq!(her(), 4);
+                    assert_eq!(her(), 1);
                 }
             },
             Err(_) => println!("Something went wrong")
