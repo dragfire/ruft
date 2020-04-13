@@ -1,25 +1,27 @@
 use std::thread;
 use zmq::Socket;
+use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 
-pub struct message;
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Message {
+    content: HashMap<String, String>,
+}
 
-type handle = fn() -> i32;
+type Handle = fn(&Message);
 
 pub struct NodeRpc {
     pub address: String,
     pub client: Socket,
-    pub handlers: HashMap<String, handle>,
+    pub handlers: HashMap<String, Handle>,
 }
 
-fn check() -> i32 {
-    println!("Check...");
-    1
+fn check(msg: &Message) {
+    println!("{:?}", msg);
 }
 
 fn register_handlers(rpc: &mut NodeRpc) {
-    let h: handle = check;
-    rpc.handlers.insert("/hello".to_string(), h);
+    rpc.handlers.insert("/hello".to_string(), check);
 }
 
 
@@ -55,7 +57,7 @@ impl NodeRpc {
 // ======================== Tests ========================
 
 #[cfg(test)]
-mod tests {
+mod rpc_tests {
     use super::*;
 
     #[test]
@@ -75,11 +77,23 @@ mod tests {
                     rpc.client.recv(&mut msg, 0).unwrap();
                     println!("Received Raft {}: {}", msg.as_str().unwrap(), request_nbr);
                 }
-                if let Some(her) = rpc.handlers.get("/hello") {
-                    assert_eq!(her(), 1);
+                if let Some(func) = rpc.handlers.get("/hello") {
+                    func(&Message{ content: HashMap::new() });
                 }
             },
             Err(_) => println!("Something went wrong")
         }
+    }
+
+    #[test]
+    fn test_message() {
+        let mut msg = Message { content: HashMap::new() };
+        msg.content.insert("key".to_string(), "value".to_string());
+        msg.content.insert("key1".to_string(), "value".to_string());
+        msg.content.insert("key2".to_string(), "value".to_string());
+        msg.content.insert("key3".to_string(), "value".to_string());
+
+        let astr = serde_json::to_string(&msg).unwrap();
+        println!("{}", astr);
     }
 }
