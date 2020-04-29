@@ -47,7 +47,7 @@ impl NodeRpc {
 
             loop {
                 server.recv(&mut msg, 0).unwrap();
-                println!("Received {}", msg.as_str().unwrap());
+                println!("Server received: {}", msg.as_str().unwrap());
                 server.send("OK", 0).unwrap();
             }
         });
@@ -59,31 +59,6 @@ impl NodeRpc {
 #[cfg(test)]
 mod rpc_tests {
     use super::*;
-
-    #[test]
-    fn test_noderpc() {
-        let mut rpc = NodeRpc::new(String::from("tcp://localhost:5555"));
-
-        match rpc {
-            Ok(ref mut rpc) => {
-                rpc.start();
-
-                let mut msg = zmq::Message::new();
-
-                for request_nbr in 0..10 {
-                    println!("Sending Ruft {}...", request_nbr);
-                    rpc.client.send("Ruft", 0).unwrap();
-
-                    rpc.client.recv(&mut msg, 0).unwrap();
-                    println!("Received Raft {}: {}", msg.as_str().unwrap(), request_nbr);
-                }
-                if let Some(func) = rpc.handlers.get("/hello") {
-                    func(&Message{ content: HashMap::new() });
-                }
-            },
-            Err(_) => println!("Something went wrong")
-        }
-    }
 
     #[test]
     fn test_message() {

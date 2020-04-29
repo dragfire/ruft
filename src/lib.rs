@@ -70,29 +70,35 @@ mod tests {
     #[test]
     fn test_node() {
         let nodes = vec![
-            "127.0.0.1:6000",
-            "127.0.0.1:6001",
-            "127.0.0.1:6002",
-            "127.0.0.1:6003",
-            "127.0.0.1:6004",
-            "127.0.0.1:6005",
+            "localhost:5555",
+           // "127.0.0.1:6001",
+           // "127.0.0.1:6002",
+           // "127.0.0.1:6003",
+           // "127.0.0.1:6004",
+           // "127.0.0.1:6005",
         ];
+
         let nodes_str: Vec<String> = nodes.iter().map(|node| node.to_owned().to_string()).collect();
 
         for node_addr in &nodes {
-            let rpc = rpc::NodeRpc::new(node_addr.to_string());
+            let tcp_addr = String::from("tcp://") + &node_addr;
+            let rpc = rpc::NodeRpc::new(tcp_addr);
             let log = Log{};
             match rpc {
                 Ok(node_rpc) => {
                     let mut node = Node::new(node_addr.to_string(), nodes_str.to_owned(), node_rpc, log);
-
                     node.rpc.start();
-
-                    for _ in 0..10 {
+                    let mut msg = zmq::Message::new();
+                    for req_nbr in 0..10 {
+                        println!("Req: {}, sending...", req_nbr);
                         node.rpc.client.send("hello how are you!", 0).unwrap();
+                        node.rpc.client.recv(&mut msg, 0).unwrap();
+                        println!("Received: {}", msg.as_str().unwrap());
                     }
                 }
-                Err(_) => {}
+                Err(e) => {
+                    println!("Error: {:?}", e);
+                }
             }
         }
     }
