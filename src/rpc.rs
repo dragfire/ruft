@@ -37,11 +37,16 @@ impl NodeRpc {
     pub fn start(&mut self) {
         register_handlers(self);
         println!("Starting server: {}", self.address);
-
-        thread::spawn(|| {
+        let address = self.address.to_owned();
+        thread::spawn(move || {
             let context = zmq::Context::new();
             let server = context.socket(zmq::REP).unwrap();
-            assert!(server.bind("tcp://*:5555").is_ok());
+
+            server.bind(&address).or_else(|e: zmq::Error| -> Result<(), zmq::Error> {
+                // just want to see the error
+                println!("{:?}", e);
+                Err(e)
+            }).unwrap();
 
             let mut msg = zmq::Message::new();
 
@@ -53,8 +58,6 @@ impl NodeRpc {
         });
     }
 }
-
-// ======================== Tests ========================
 
 #[cfg(test)]
 mod rpc_tests {
