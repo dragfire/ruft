@@ -24,7 +24,6 @@ fn register_handlers(rpc: &mut NodeRpc) {
     rpc.handlers.insert("/hello".to_string(), check);
 }
 
-
 impl NodeRpc {
     pub fn new(address: String) -> Result<NodeRpc, zmq::Error> {
         let context = zmq::Context::new();
@@ -37,6 +36,7 @@ impl NodeRpc {
 
     pub fn start(&mut self) {
         register_handlers(self);
+        println!("Starting server: {}", self.address);
 
         thread::spawn(|| {
             let context = zmq::Context::new();
