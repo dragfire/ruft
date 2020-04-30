@@ -12,7 +12,7 @@ type Handle = fn(&Message);
 
 pub struct NodeRpc {
     pub address: String,
-    pub client: Socket,
+    pub clients: HashMap<String, Socket>, // cache client connections
     pub handlers: HashMap<String, Handle>,
 }
 
@@ -26,12 +26,10 @@ fn register_handlers(rpc: &mut NodeRpc) {
 
 impl NodeRpc {
     pub fn new(address: String) -> Result<NodeRpc, zmq::Error> {
-        let context = zmq::Context::new();
-        let client = context.socket(zmq::REQ)?;
-        client.connect(&address)?;
         let handlers = HashMap::new();
+        let clients: HashMap<String, Socket> = HashMap::new();
 
-        Ok(NodeRpc { address, client, handlers })
+        Ok(NodeRpc { address, clients, handlers })
     }
 
     pub fn start(&mut self) {
@@ -52,10 +50,23 @@ impl NodeRpc {
 
             loop {
                 server.recv(&mut msg, 0).unwrap();
-                println!("Server received: {}", msg.as_str().unwrap());
+                println!("Server({}) received: {}", address, msg.as_str().unwrap());
                 server.send("OK", 0).unwrap();
             }
         });
+    }
+
+    pub fn get_client(&mut self, address: &str) -> &Socket {
+        self.clients.entry(address.to_string()).or_insert_with(|| {
+            let context = zmq::Context::new();
+            let client = context.socket(zmq::REQ).unwrap();
+            let tcp_addr = String::from("tcp://") + &address;
+            client.connect(&tcp_addr).or_else(|e: zmq::Error| -> Result<(), zmq::Error> {
+                println!("{:?}", e);
+                Err(e)
+            });
+            client
+        })
     }
 }
 

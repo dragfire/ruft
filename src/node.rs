@@ -43,6 +43,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore]
     fn test_node() {
         let nodes = vec![
             "127.0.0.1:6000",
@@ -61,8 +62,8 @@ mod tests {
             let mut msg = zmq::Message::new();
             for req_nbr in 0..10 {
                 println!("Req: {}, sending...", req_nbr);
-                node.rpc.client.send("hello how are you!", 0).unwrap();
-                node.rpc.client.recv(&mut msg, 0).unwrap();
+                node.rpc.get_client(&node_addr).send("hello how are you!", 0).unwrap();
+                node.rpc.get_client(&node_addr).recv(&mut msg, 0).unwrap();
                 println!("Received: {}", msg.as_str().unwrap());
             }
         }
@@ -74,14 +75,24 @@ mod tests {
         let address2 = "127.0.0.1:6001".to_string();
         let addresses = vec![address1.to_owned(), address2.to_owned()];
 
-        let mut node1 = Node::new(address1, addresses.to_owned());
-        let mut node2 = Node::new(address2, addresses.to_owned());
+        let mut node1 = Node::new(address1.to_owned(), addresses.to_owned());
+        let mut node2 = Node::new(address2.to_owned(), addresses.to_owned());
         
         node1.rpc.start();
         node2.rpc.start();
 
-        // TBD: get client using address 
-        // TBD: change rpc overall structure
-        // TBD: cache client connections
+        let client2 = node1.rpc.get_client(&address2);
+
+        let mut msg = zmq::Message::new();
+
+        client2.send("RUFT to Server 2", 0).unwrap();
+        // check if get_client works
+        node1.rpc.get_client(&address2).recv(&mut msg, 0).unwrap();
+        println!("Received: {}", msg.as_str().unwrap());
+
+        let client1 = node2.rpc.get_client(&address1);
+        client1.send("RUFT to server 1", 0).unwrap();
+        node2.rpc.get_client(&address1).recv(&mut msg, 0).unwrap();
+        println!("Received: {}", msg.as_str().unwrap());
     }
 }
