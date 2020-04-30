@@ -82,5 +82,6 @@ mod tests {
 
         // TBD: get client using address 
         // TBD: change rpc overall structure
+        // TBD: cache client connections
     }
 }
