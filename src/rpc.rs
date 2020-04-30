@@ -24,6 +24,11 @@ fn register_handlers(rpc: &mut NodeRpc) {
     rpc.handlers.insert("/hello".to_string(), check);
 }
 
+pub fn connect_socket(client: &Socket, address: &str) {
+    let tcp_addr = String::from("tcp://") + &address;
+    client.connect(&tcp_addr).unwrap();
+}
+
 impl NodeRpc {
     pub fn new(address: String) -> Result<NodeRpc, zmq::Error> {
         let handlers = HashMap::new();
@@ -60,11 +65,7 @@ impl NodeRpc {
         self.clients.entry(address.to_string()).or_insert_with(|| {
             let context = zmq::Context::new();
             let client = context.socket(zmq::REQ).unwrap();
-            let tcp_addr = String::from("tcp://") + &address;
-            client.connect(&tcp_addr).or_else(|e: zmq::Error| -> Result<(), zmq::Error> {
-                println!("{:?}", e);
-                Err(e)
-            });
+            connect_socket(&client, address);
             client
         })
     }
