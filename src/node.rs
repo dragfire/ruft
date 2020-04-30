@@ -20,7 +20,11 @@ pub struct Node {
 }
 
 impl Node {
-    fn new(address: String, other_node_adds: Vec<String>, rpc: NodeRpc, log: Log) -> Self {
+    fn new(address: String, other_node_adds: Vec<String>) -> Self {
+        let tcp_addr = String::from("tcp://") + &address;
+        let rpc = NodeRpc::new(tcp_addr).unwrap();
+        let log = Log{};
+
         Node {
             state: NodeState::Follower,
             term: 0,
@@ -52,25 +56,31 @@ mod tests {
         let nodes_str: Vec<String> = nodes.iter().map(|node| node.to_owned().to_string()).collect();
 
         for node_addr in &nodes {
-            let tcp_addr = String::from("tcp://") + &node_addr;
-            let rpc = NodeRpc::new(tcp_addr);
-            let log = Log{};
-            match rpc {
-                Ok(node_rpc) => {
-                    let mut node = Node::new(node_addr.to_string(), nodes_str.to_owned(), node_rpc, log);
-                    node.rpc.start();
-                    let mut msg = zmq::Message::new();
-                    for req_nbr in 0..10 {
-                        println!("Req: {}, sending...", req_nbr);
-                        node.rpc.client.send("hello how are you!", 0).unwrap();
-                        node.rpc.client.recv(&mut msg, 0).unwrap();
-                        println!("Received: {}", msg.as_str().unwrap());
-                    }
-                },
-                Err(e) => {
-                    println!("Error: {:?}", e);
-                }
+            let mut node = Node::new(node_addr.to_string(), nodes_str.to_owned());
+            node.rpc.start();
+            let mut msg = zmq::Message::new();
+            for req_nbr in 0..10 {
+                println!("Req: {}, sending...", req_nbr);
+                node.rpc.client.send("hello how are you!", 0).unwrap();
+                node.rpc.client.recv(&mut msg, 0).unwrap();
+                println!("Received: {}", msg.as_str().unwrap());
             }
         }
+    }
+
+    #[test]
+    fn test_interact_two_nodes() {
+        let address1 = "127.0.0.1:6000".to_string();
+        let address2 = "127.0.0.1:6001".to_string();
+        let addresses = vec![address1.to_owned(), address2.to_owned()];
+
+        let mut node1 = Node::new(address1, addresses.to_owned());
+        let mut node2 = Node::new(address2, addresses.to_owned());
+        
+        node1.rpc.start();
+        node2.rpc.start();
+
+        // TBD: get client using address 
+        // TBD: change rpc overall structure
     }
 }
