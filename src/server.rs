@@ -24,20 +24,20 @@ impl Server {
     pub fn new(address: String, other_node_adds: Vec<String>) -> Result<Server, zmq::Error> {
         let handlers = HashMap::new();
         let clients: HashMap<String, Socket> = HashMap::new();
+        let tcp_addr = util::get_tcp_address(&address);
 
-        let node = Node::new(address.to_owned(), other_node_adds);
+        let node = Node::new(tcp_addr.to_owned(), other_node_adds);
         let context = zmq::Context::new();
         let responder = Arc::new(Mutex::new(context.socket(zmq::REP).unwrap()));
 
         responder.lock()
             .unwrap()
-            .bind(&util::get_tcp_address(&address))
+            .bind(&tcp_addr)
             .or_else(|e: zmq::Error| -> Result<(), zmq::Error> {
                 // just want to see the error
                 println!("{:?}", e);
                 Err(e)
             }).unwrap();
-
 
         Ok(Server { node, responder, clients, handlers })
     }
@@ -45,7 +45,6 @@ impl Server {
     pub fn start(&mut self) -> thread::JoinHandle<()> {
         self.register_handlers();
         println!("Starting server: {}", self.node.address);
-        let address = util::get_tcp_address(&self.node.address);
         let responder = Arc::clone(&self.responder);
 
         thread::spawn(move || {
@@ -53,7 +52,6 @@ impl Server {
 
             loop {
                 responder.lock().unwrap().recv(&mut msg, 0).unwrap();
-                println!("Server({}) received: {}", address, msg.as_str().unwrap());
                 responder.lock().unwrap().send("OK", 0).unwrap();
                 // TBD: pass msg to the right handler
             }

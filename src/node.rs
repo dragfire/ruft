@@ -42,8 +42,7 @@ mod tests {
     use super::*;
 
     #[test]
-    #[ignore]
-    fn test_node() {
+    fn test_multiple_nodes() {
         let nodes = vec![
             "127.0.0.1:6000",
             "127.0.0.1:6001",
@@ -59,19 +58,18 @@ mod tests {
             let mut server = Server::new(node_addr.to_string(), nodes_str.to_owned()).unwrap();
             server.start();
             let mut msg = zmq::Message::new();
-            for req_nbr in 0..10 {
-                println!("Req: {}, sending...", req_nbr);
+            for _ in 0..10 {
                 server.get_client(&node_addr).send("hello how are you!", 0).unwrap();
                 server.get_client(&node_addr).recv(&mut msg, 0).unwrap();
-                println!("Received: {}", msg.as_str().unwrap());
+                assert_eq!("OK", msg.as_str().unwrap());
             }
         }
     }
 
     #[test]
     fn test_interact_two_nodes() {
-        let address1 = "127.0.0.1:6000".to_string();
-        let address2 = "127.0.0.1:6001".to_string();
+        let address1 = "127.0.0.1:7000".to_string();
+        let address2 = "127.0.0.1:7001".to_string();
         let addresses = vec![address1.to_owned(), address2.to_owned()];
 
         let mut server1 = Server::new(address1.to_owned(), addresses.to_owned()).unwrap();
