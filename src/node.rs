@@ -88,11 +88,11 @@ mod tests {
         client2.send("RUFT to Server 2", 0).unwrap();
         // check if get_client works
         node1.rpc.get_client(&address2).recv(&mut msg, 0).unwrap();
-        println!("Received: {}", msg.as_str().unwrap());
+        assert_eq!(msg.as_str().unwrap(), "OK");
 
         let client1 = node2.rpc.get_client(&address1);
         client1.send("RUFT to server 1", 0).unwrap();
         node2.rpc.get_client(&address1).recv(&mut msg, 0).unwrap();
-        println!("Received: {}", msg.as_str().unwrap());
+        assert_eq!(msg.as_str().unwrap(), "OK");
     }
 }
