@@ -1,4 +1,5 @@
 use crate::rpc::NodeRpc;
+use crate::util;
 
 pub struct Log;
 
@@ -33,8 +34,8 @@ impl Node {
             other_node_adds,
             term: 0,
             term_count: 0,
-            heartbeat_timeout: 190,
-            election_timeout: 298,
+            heartbeat_timeout: util::random_timeout(),
+            election_timeout: util::random_timeout(),
             state: NodeState::Follower,
         }
     }
