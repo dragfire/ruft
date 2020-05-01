@@ -2,6 +2,7 @@ use std::thread;
 use zmq::Socket;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
+use crate::node::Node;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
@@ -10,8 +11,8 @@ pub struct Message {
 
 type Handle = fn(&Message);
 
-pub struct NodeRpc {
-    pub address: String,
+pub struct Server {
+    pub node: Node,
     pub clients: HashMap<String, Socket>, // cache client connections
     pub handlers: HashMap<String, Handle>,
 }
@@ -20,7 +21,7 @@ fn check(msg: &Message) {
     println!("{:?}", msg);
 }
 
-fn register_handlers(rpc: &mut NodeRpc) {
+fn register_handlers(rpc: &mut Server) {
     rpc.handlers.insert("/hello".to_string(), check);
 }
 
@@ -29,18 +30,22 @@ pub fn connect_socket(client: &Socket, address: &str) {
     client.connect(&tcp_addr).unwrap();
 }
 
-impl NodeRpc {
-    pub fn new(address: String) -> Result<NodeRpc, zmq::Error> {
+impl Server {
+    pub fn new(address: String, other_node_adds: Vec<String>) -> Result<Server, zmq::Error> {
         let handlers = HashMap::new();
         let clients: HashMap<String, Socket> = HashMap::new();
 
-        Ok(NodeRpc { address, clients, handlers })
+        let mut node = Node::new(address, other_node_adds);
+
+
+        Ok(Server { node, clients, handlers })
     }
 
     pub fn start(&mut self) {
         register_handlers(self);
-        println!("Starting server: {}", self.address);
-        let address = self.address.to_owned();
+        println!("Starting server: {}", self.node.address);
+        let address = String::from("tcp://") + &self.node.address;
+
         thread::spawn(move || {
             let context = zmq::Context::new();
             let server = context.socket(zmq::REP).unwrap();
