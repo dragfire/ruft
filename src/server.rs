@@ -1,8 +1,10 @@
 use std::thread;
+use std::sync::{Arc, Mutex};
 use zmq::Socket;
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use crate::node::Node;
+use crate::util;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
@@ -13,21 +15,9 @@ type Handle = fn(&Message);
 
 pub struct Server {
     pub node: Node,
+    pub responder: Arc<Mutex<Socket>>,
     pub clients: HashMap<String, Socket>, // cache client connections
     pub handlers: HashMap<String, Handle>,
-}
-
-fn check(msg: &Message) {
-    println!("{:?}", msg);
-}
-
-fn register_handlers(rpc: &mut Server) {
-    rpc.handlers.insert("/hello".to_string(), check);
-}
-
-pub fn connect_socket(client: &Socket, address: &str) {
-    let tcp_addr = String::from("tcp://") + &address;
-    client.connect(&tcp_addr).unwrap();
 }
 
 impl Server {
@@ -35,44 +25,61 @@ impl Server {
         let handlers = HashMap::new();
         let clients: HashMap<String, Socket> = HashMap::new();
 
-        let mut node = Node::new(address, other_node_adds);
+        let node = Node::new(address.to_owned(), other_node_adds);
+        let context = zmq::Context::new();
+        let responder = Arc::new(Mutex::new(context.socket(zmq::REP).unwrap()));
 
-
-        Ok(Server { node, clients, handlers })
-    }
-
-    pub fn start(&mut self) {
-        register_handlers(self);
-        println!("Starting server: {}", self.node.address);
-        let address = String::from("tcp://") + &self.node.address;
-
-        thread::spawn(move || {
-            let context = zmq::Context::new();
-            let server = context.socket(zmq::REP).unwrap();
-
-            server.bind(&address).or_else(|e: zmq::Error| -> Result<(), zmq::Error> {
+        responder.lock()
+            .unwrap()
+            .bind(&util::get_tcp_address(&address))
+            .or_else(|e: zmq::Error| -> Result<(), zmq::Error> {
                 // just want to see the error
                 println!("{:?}", e);
                 Err(e)
             }).unwrap();
 
+
+        Ok(Server { node, responder, clients, handlers })
+    }
+
+    pub fn start(&mut self) -> thread::JoinHandle<()> {
+        self.register_handlers();
+        println!("Starting server: {}", self.node.address);
+        let address = util::get_tcp_address(&self.node.address);
+        let responder = Arc::clone(&self.responder);
+
+        thread::spawn(move || {
             let mut msg = zmq::Message::new();
 
             loop {
-                server.recv(&mut msg, 0).unwrap();
+                responder.lock().unwrap().recv(&mut msg, 0).unwrap();
                 println!("Server({}) received: {}", address, msg.as_str().unwrap());
-                server.send("OK", 0).unwrap();
+                responder.lock().unwrap().send("OK", 0).unwrap();
+                // TBD: pass msg to the right handler
             }
-        });
+        })
     }
 
     pub fn get_client(&mut self, address: &str) -> &Socket {
         self.clients.entry(address.to_string()).or_insert_with(|| {
             let context = zmq::Context::new();
             let client = context.socket(zmq::REQ).unwrap();
-            connect_socket(&client, address);
+            Server::connect_socket(&client, address);
             client
         })
+    }
+
+    fn register_handlers(&mut self) {
+        self.handlers.insert("/hello".to_string(), Server::check);
+    }
+
+    fn connect_socket(client: &Socket, address: &str) {
+        let tcp_addr = String::from("tcp://") + &address;
+        client.connect(&tcp_addr).unwrap();
+    }
+
+    fn check(msg: &Message) {
+        println!("{:?}", msg);
     }
 }
 

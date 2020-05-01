@@ -8,6 +8,16 @@ pub fn random_timeout() -> i32 {
     rng.gen_range(150, 301)
 }
 
+/// Get tcp address for zmq socket
+pub fn get_tcp_address(address: &str) -> String {
+    //    uri::Builder::new()
+    //        .scheme("tcp")
+    //        .authority(address)
+    //        .build()
+    //        .unwrap()
+    String::from("tcp://") + address
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
