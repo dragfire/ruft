@@ -16,7 +16,8 @@ pub struct Node {
     rpc:  NodeRpc,
     term_count: u64,
     log: Log,
-    heartbeat_interval: i32,
+    election_timeout: i32,
+    heartbeat_timeout: i32,
 }
 
 impl Node {
@@ -26,14 +27,15 @@ impl Node {
         let log = Log{};
 
         Node {
-            state: NodeState::Follower,
-            term: 0,
-            term_count: 0,
-            heartbeat_interval: 500, // ms?
             rpc, 
             log,
             address,
             other_node_adds,
+            term: 0,
+            term_count: 0,
+            heartbeat_timeout: 190,
+            election_timeout: 298,
+            state: NodeState::Follower,
         }
     }
 }

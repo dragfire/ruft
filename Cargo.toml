@@ -10,3 +10,4 @@ edition = "2018"
 zmq = "0.9"
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
+rand = "0.7"
