@@ -75,8 +75,11 @@ mod tests {
         let mut server1 = Server::new(address1.to_owned(), addresses.to_owned()).unwrap();
         let mut server2 = Server::new(address2.to_owned(), addresses.to_owned()).unwrap();
 
-        server1.start();
-        server2.start();
+        let join_handle1 = server1.start();
+        let join_handle2 = server2.start();
+
+        // join_handle1.join().unwrap();
+        // join_handle2.join().unwrap();
 
         let client2 = server1.get_client(&address2);
 

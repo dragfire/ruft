@@ -36,4 +36,9 @@ mod test {
         let mut msg: HashMap<String, String> = serde_json::from_str(&m_str).unwrap();
         println!("{:?}", msg);
     }
+
+    #[test]
+    fn test_timeout() {
+
+    }
 }

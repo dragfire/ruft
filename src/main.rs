@@ -1,3 +1,10 @@
+use std::thread;
+use std::sync::mpsc;
+use std::time;
+
+mod util;
+use util::random_timeout;
+
 fn main() {
     let nodes = vec![
         "127.0.0.1:6000",
@@ -13,5 +20,20 @@ fn main() {
     }
 
     println!("Ruft Raft...");
+
+    let (tx, rx) = mpsc::channel::<i32>();
+
+    let heartbeat_handle = thread::spawn(|| loop {
+        thread::sleep(time::Duration::from_millis(random_timeout() as u64)); 
+        println!("heartbeat");
+    });
+
+    let election_handle = thread::spawn(|| loop {
+        thread::sleep(time::Duration::from_millis(random_timeout() as u64)); 
+        println!("election");
+    });
+
+    heartbeat_handle.join().unwrap();
+    election_handle.join().unwrap();
 }
 
