@@ -8,7 +8,7 @@ use crate::util;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
-    content: HashMap<String, String>,
+    pub content: HashMap<String, String>,
 }
 
 type Handle = fn(&Message);
@@ -52,6 +52,8 @@ impl Server {
 
             loop {
                 responder.lock().unwrap().recv(&mut msg, 0).unwrap();
+                let message: Message = serde_json::from_str(msg.as_str().unwrap()).unwrap();
+                println!("{:?}", message);
                 responder.lock().unwrap().send("OK", 0).unwrap();
                 // TBD: pass msg to the right handler
             }

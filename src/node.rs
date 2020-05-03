@@ -1,4 +1,5 @@
-use crate::server::Server;
+use std::collections::HashMap;
+use crate::server::{Server, Message};
 use crate::util;
 
 pub struct Log;
@@ -42,6 +43,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore]
     fn test_multiple_nodes() {
         let nodes = vec![
             "127.0.0.1:6000",
@@ -54,12 +56,20 @@ mod tests {
 
         let nodes_str: Vec<String> = nodes.iter().map(|node| node.to_owned().to_string()).collect();
 
+        let mut msg = Message { content: HashMap::new() };
+        msg.content.insert("key".to_string(), "value".to_string());
+        msg.content.insert("key1".to_string(), "value".to_string());
+        msg.content.insert("key2".to_string(), "value".to_string());
+        msg.content.insert("key3".to_string(), "value".to_string());
+
+        let astr = serde_json::to_string(&msg).unwrap();
+
         for node_addr in &nodes {
             let mut server = Server::new(node_addr.to_string(), nodes_str.to_owned()).unwrap();
             server.start();
             let mut msg = zmq::Message::new();
             for _ in 0..10 {
-                server.get_client(&node_addr).send("hello how are you!", 0).unwrap();
+                server.get_client(&node_addr).send(&astr, 0).unwrap();
                 server.get_client(&node_addr).recv(&mut msg, 0).unwrap();
                 assert_eq!("OK", msg.as_str().unwrap());
             }

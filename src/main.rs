@@ -6,6 +6,7 @@ mod util;
 use util::random_timeout;
 
 fn main() {
+    println!("Ruft Raft...");
     let nodes = vec![
         "127.0.0.1:6000",
         "127.0.0.1:6001",
@@ -18,8 +19,6 @@ fn main() {
     for node in nodes {
         println!("{}", node);
     }
-
-    println!("Ruft Raft...");
 
     let (tx, rx) = mpsc::channel::<i32>();
 
