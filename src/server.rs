@@ -5,11 +5,7 @@ use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use crate::node::Node;
 use crate::util;
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Message {
-    pub content: HashMap<String, String>,
-}
+use crate::message::Message;
 
 type Handle = fn(&Message);
 
@@ -48,14 +44,12 @@ impl Server {
         let responder = Arc::clone(&self.responder);
 
         thread::spawn(move || {
-            let mut msg = zmq::Message::new();
-
             loop {
+                let mut msg = zmq::Message::new();
                 responder.lock().unwrap().recv(&mut msg, 0).unwrap();
                 let message: Message = serde_json::from_str(msg.as_str().unwrap()).unwrap();
-                println!("{:?}", message);
+                Server::processMsg(message);
                 responder.lock().unwrap().send("OK", 0).unwrap();
-                // TBD: pass msg to the right handler
             }
         })
     }
@@ -80,6 +74,18 @@ impl Server {
 
     fn check(msg: &Message) {
         println!("{:?}", msg);
+    }
+
+    fn leaderHeartbeat(msg: Message) {
+        unimplemented!();
+    }
+
+    fn respondToLeaderHeartbeat(&mut self) {
+        unimplemented!();
+    }
+
+    fn processMsg(msg: Message) {
+        println!("Processing Message: {:?}", msg);
     }
 }
 

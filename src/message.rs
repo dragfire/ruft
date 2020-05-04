@@ -1,6 +1,11 @@
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 
+#[derive(Debug, Serialize, Deserialize)]
+pub struct Message {
+    pub content: HashMap<String, String>,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Point {
     pub x: i32,
