@@ -1,5 +1,6 @@
 use std::collections::HashMap;
-use crate::server::{Server, Message};
+use crate::server::Server;
+use crate::message::Message;
 use crate::util;
 
 pub struct Log;
@@ -27,8 +28,8 @@ pub struct Node {
     pub other_node_adds: Vec<String>, 
     pub term_count: u64,
     pub log: Log,
-    pub election_timeout: i32,
-    pub heartbeat_timeout: i32,
+    pub election_timeout: u64,
+    pub heartbeat_timeout: u64,
 }
 
 impl Node {

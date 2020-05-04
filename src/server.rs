@@ -1,6 +1,7 @@
 use std::thread;
-use std::sync::{Arc, Mutex};
 use zmq::Socket;
+use std::time;
+use std::sync::{Arc, Mutex};
 use serde::{Serialize, Deserialize};
 use std::collections::HashMap;
 use crate::node::Node;
@@ -52,6 +53,21 @@ impl Server {
                 responder.lock().unwrap().send("OK", 0).unwrap();
             }
         })
+    }
+
+    pub fn start_leader_election(&mut self) -> thread::JoinHandle<()> {
+        let election_timeout = self.node.election_timeout;
+        thread::spawn(move || loop {
+            thread::sleep(time::Duration::from_millis(election_timeout));
+            println!("leader election");
+        })
+    }
+
+    pub fn start_all(&mut self) -> Vec<thread::JoinHandle<()>> {
+        let node_handle = self.start();
+        let leader_handle = self.start_leader_election();
+
+        vec![node_handle, leader_handle]
     }
 
     pub fn get_client(&mut self, address: &str) -> &Socket {
