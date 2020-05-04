@@ -91,17 +91,25 @@ mod tests {
         // join_handle1.join().unwrap();
         // join_handle2.join().unwrap();
 
+        let mut msg = Message { content: HashMap::new() };
+        msg.content.insert("key".to_string(), "value".to_string());
+        msg.content.insert("key1".to_string(), "value".to_string());
+        msg.content.insert("key2".to_string(), "value".to_string());
+        msg.content.insert("key3".to_string(), "value".to_string());
+
+        let astr = serde_json::to_string(&msg).unwrap();
+
         let client2 = server1.get_client(&address2);
 
         let mut msg = zmq::Message::new();
 
-        client2.send("RUFT to Server 2", 0).unwrap();
+        client2.send(&astr, 0).unwrap();
         // check if get_client works
         server1.get_client(&address2).recv(&mut msg, 0).unwrap();
         assert_eq!(msg.as_str().unwrap(), "OK");
 
         let client1 = server2.get_client(&address1);
-        client1.send("RUFT to server 1", 0).unwrap();
+        client1.send(&astr, 0).unwrap();
         server2.get_client(&address1).recv(&mut msg, 0).unwrap();
         assert_eq!(msg.as_str().unwrap(), "OK");
     }

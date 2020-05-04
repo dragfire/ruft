@@ -35,4 +35,3 @@ fn main() {
     heartbeat_handle.join().unwrap();
     election_handle.join().unwrap();
 }
-
