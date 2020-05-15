@@ -3,15 +3,14 @@ use std::collections::HashMap;
 
 mod server;
 mod node;
-mod message;
+pub mod message;
 mod storage;
-mod util;
+pub mod util;
 
 use server::Server;
 use message::Message;
 
 pub fn start_all() {
-    println!("Ruft Raft...");
     let address1 = "127.0.0.1:7000".to_string();
     let address2 = "127.0.0.1:7001".to_string();
     let addresses = vec![address1.to_owned(), address2.to_owned()];
@@ -19,10 +18,8 @@ pub fn start_all() {
     let mut server1 = Server::new(address1.to_owned(), addresses.to_owned()).unwrap();
     let mut server2 = Server::new(address2.to_owned(), addresses.to_owned()).unwrap();
 
-    let mut handles1 = server1.start_all();
-    handles1.append(&mut server2.start_all());
-
-    let handles: Vec<thread::JoinHandle<()>> = handles1;
+    let mut handles: Vec<thread::JoinHandle<()>> = server1.start_all();
+    handles.append(&mut server2.start_all());
 
     let mut msg = Message { content: HashMap::new() };
     msg.content.insert("key".to_string(), "value".to_string());

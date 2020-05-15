@@ -11,16 +11,6 @@ pub enum NodeState {
     Leader,
 }
 
-/// Represents thread unsafe node's state
-///
-/// Leader Election:
-///     Default State: Follower
-///     After election timeout, becomes candidate. Request vote to all nodes.
-///         Increase term count, votes for itself.
-///     Elected as leader if received votes from majority of nodes.
-///
-///     TBD: take care of split vote (two candidates getting same number of votes)
-///
 pub struct Node {
     pub state: NodeState,
     pub term: u64,

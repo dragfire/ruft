@@ -6,6 +6,22 @@ pub struct Message {
     pub content: HashMap<String, String>,
 }
 
+impl Message {
+    pub fn new() -> Self {
+        Message {
+            content: HashMap::new(),
+        }
+    }
+
+    pub fn put(&mut self, k: String, v: String) {
+        self.content.insert(k, v);
+    }
+
+    pub fn get(&mut self, k: String) -> Option<&String> {
+        self.content.get(&k)
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Point {
     pub x: i32,
