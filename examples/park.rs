@@ -6,13 +6,6 @@ use std::sync::mpsc::{self, TryRecvError, channel};
 use ruft::util;
 use ruft::message::Message;
 
-/// Leader Election:
-///     Spawn a thread that sleeps for every util::random_timeout() 
-///     Two things that can happen while the countdown starts:
-///         - Check if any other candidate requested for votes
-///         - Check if it timeouts, vote for itself(change state to NodeState::Candidate),
-///         increment termCount
-///
 struct StateInner {
     election_requested: bool,
     election_req_received: bool,
@@ -80,14 +73,24 @@ fn park_thread() {
     parked_thread.join().unwrap();
 }
 
+/// Leader Election:
+///     Spawn a thread that sleeps for every util::random_timeout() 
+///     Two things that can happen while the countdown starts:
+///         - Check if any other candidate requested for votes
+///         - Check if it timeouts, vote for itself(change state to NodeState::Candidate),
+///         increment termCount
+///
 fn election_thread(rx: Arc<Mutex<mpsc::Receiver<Message>>>) -> thread::JoinHandle<()> {
     thread::spawn(move || loop {
         let rec = rx.lock().unwrap();
         match rec.recv_timeout(Duration::from_millis(util::random_timeout())) {
             Ok(msg) => {
+                // if Follower, and already not voted, vote
+                // if Ca
                 println!("received something {:?}", msg);
             }
             Err(mpsc::RecvTimeoutError::Timeout) => {
+                // Timeout -> change from Follower to Candidate
                 println!("Timeout...");
             }
             Err(_) => {

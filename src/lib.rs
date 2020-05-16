@@ -1,11 +1,12 @@
 use std::thread;
 use std::collections::HashMap;
 
-mod server;
-mod node;
+pub mod server;
+pub mod node;
 pub mod message;
-mod storage;
+pub mod storage;
 pub mod util;
+pub mod ticker;
 
 use server::Server;
 use message::Message;
